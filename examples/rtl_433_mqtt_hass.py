@@ -113,7 +113,6 @@ SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
 
 # Global mapping of rtl_433 field names to Home Assistant metadata.
 # @todo - should probably externalize to a config file
-# @todo - Model specific definitions might be needed
 
 mappings = {
     "metertype": {
@@ -532,6 +531,17 @@ mappings = {
             "payload_on": "1",
             "payload_off": "0",
             "entity_category": "diagnostic"
+        },
+        "override": {
+            "SCMplus": {
+                "device_type": "sensor",
+                "config": {
+                    "device_class": None,
+                    "payload_on": None,
+                    "payload_off": None,
+                    "value_template": "{{ value }}"
+                }
+            }
         }
     },
 
@@ -934,6 +944,27 @@ def rtl_433_device_info(data, topic_prefix):
     return (f"{topic_prefix}/{path}", id)
 
 
+def apply_override(mapping, model):
+    """Apply per-model overrides to a mapping and return a copy without the override property."""
+    result = {k: v for k, v in mapping.items() if k != "override"}
+    if "override" in mapping and model in mapping["override"]:
+        overrides = mapping["override"][model]
+        for key, value in overrides.items():
+            if key == "config":
+                result["config"] = result.get("config", {}).copy()
+                for cfg_key, cfg_value in value.items():
+                    if cfg_value is None:
+                        result["config"].pop(cfg_key, None)
+                    else:
+                        result["config"][cfg_key] = cfg_value
+            else:
+                if value is None:
+                    result.pop(key, None)
+                else:
+                    result[key] = value
+    return result
+
+
 def publish_config(mqttc, topic, model, object_id, mapping, key=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
@@ -1010,7 +1041,8 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
         if lowerkey in mappings:
             # topic = "/".join([topicprefix,"devices",model,instance,key])
             topic = "/".join([base_topic, key])
-            if publish_config(mqttc, topic, model, device_id, mappings[lowerkey], key):
+            mapping = apply_override(mappings[lowerkey], model)
+            if publish_config(mqttc, topic, model, device_id, mapping, key):
                 published_keys.append(lowerkey)
         else:
             if lowerkey not in SKIP_KEYS:
