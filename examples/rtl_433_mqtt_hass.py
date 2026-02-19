@@ -994,13 +994,14 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
 
     # detect known attributes
     for key in data.keys():
-        if key in mappings:
+        lowerkey = key.lower()
+        if lowerkey in mappings:
             # topic = "/".join([topicprefix,"devices",model,instance,key])
             topic = "/".join([base_topic, key])
-            if publish_config(mqttc, topic, model, device_id, mappings[key], key):
-                published_keys.append(key)
+            if publish_config(mqttc, topic, model, device_id, mappings[lowerkey], key):
+                published_keys.append(lowerkey)
         else:
-            if key not in SKIP_KEYS:
+            if lowerkey not in SKIP_KEYS:
                 skipped_keys.append(key)
 
     if "secret_knock" in data.keys():
