@@ -116,6 +116,18 @@ SKIP_KEYS = [ "type", "model", "subtype", "channel", "id", "mic", "mod",
 # @todo - Model specific definitions might be needed
 
 mappings = {
+    "metertype": {
+        "device_type": "sensor",
+        "object_suffix": "meter",
+        "config": {
+            "name": "Meter Type",
+            "device_class": "enum",
+            "value_template": "{{ value }}",
+            "entity_category": "diagnostic",
+            "icon": "mdi:meter-electric",
+            "options": ["Electric", "Gas", "Water", "unknown"]
+        }
+    },
     "temperature_C": {
         "device_type": "sensor",
         "object_suffix": "T",
